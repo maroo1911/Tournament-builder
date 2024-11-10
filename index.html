@@ -77,6 +77,18 @@
         .nav a.active {
             color: #FFFFFF;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #555;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -124,6 +136,7 @@
     <script>
         let groups = [];
         let matches = [];
+        let teamStats = [];
 
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => {
@@ -153,6 +166,10 @@
             const teams = Array.from({ length: numTeams }, (_, i) => `Team ${i + 1}`);
             const shuffledTeams = shuffle(teams);
             groups = Array.from({ length: numGroups }, () => []);
+            teamStats = teams.map(team => ({
+                name: team,
+                played: 0, wins: 0, losses: 0, draws: 0, goalsFor: 0, goalsAgainst: 0, points: 0
+            }));
 
             shuffledTeams.forEach((team, index) => {
                 groups[index % numGroups].push(team);
@@ -170,16 +187,35 @@
                 const groupDiv = document.createElement('div');
                 groupDiv.classList.add('group');
                 groupDiv.innerHTML = `<h3>Group ${index + 1}</h3>`;
-                group.forEach((team, i) => {
-                    groupDiv.innerHTML += `<input type="text" value="${team}" onchange="updateTeamName(${index}, ${i}, this.value)" class="form-group"/>`;
+                
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <tr>
+                        <th>Team</th><th>Played</th><th>Wins</th><th>Losses</th><th>Draws</th>
+                        <th>Goals For</th><th>Goals Against</th><th>Goal Diff</th><th>Points</th>
+                    </tr>
+                `;
+                group.forEach(teamName => {
+                    const team = teamStats.find(t => t.name === teamName);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><input type="text" value="${team.name}" onchange="updateTeamName('${team.name}', this.value)"/></td>
+                        <td>${team.played}</td><td>${team.wins}</td><td>${team.losses}</td><td>${team.draws}</td>
+                        <td>${team.goalsFor}</td><td>${team.goalsAgainst}</td><td>${team.goalsFor - team.goalsAgainst}</td>
+                        <td>${team.points}</td>
+                    `;
+                    table.appendChild(row);
                 });
+                groupDiv.appendChild(table);
                 groupTableDiv.appendChild(groupDiv);
             });
         }
 
-        function updateTeamName(groupIndex, teamIndex, newName) {
-            groups[groupIndex][teamIndex] = newName;
+        function updateTeamName(oldName, newName) {
+            const team = teamStats.find(t => t.name === oldName);
+            team.name = newName;
             generateMatches(document.getElementById('numMatches').value);
+            generateGroupTable();
         }
 
         function generateMatches(numMatches) {
@@ -187,26 +223,9 @@
             groups.forEach(group => {
                 for (let i = 0; i < group.length; i++) {
                     for (let j = i + 1; j < group.length; j++) {
-                        for (let k = 0; k < numMatches; k++) {
-                            matches.push({ teams: `${group[i]} vs ${group[j]}`, upcoming: true });
-                        }
-                    }
-                }
-            });
-            displayMatches();
-        }
-
-        function displayMatches() {
-            const matchesListDiv = document.getElementById('matchesList');
-            matchesListDiv.innerHTML = '';
-            
-            matches.forEach((match, index) => {
-                const matchDiv = document.createElement('div');
-                matchDiv.classList.add('match');
-                matchDiv.textContent = `${index + 1}. ${match.teams} ${match.upcoming ? "(Upcoming)" : ""}`;
-                matchesListDiv.appendChild(matchDiv);
-            });
-        }
-    </script>
-</body>
-</html>
+                        matches.push({
+                            teamA: group[i],
+                            teamB: group[j],
+                            finished: false,
+                            goalsA: 0,
+                            goalsB: 0
