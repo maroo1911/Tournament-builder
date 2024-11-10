@@ -186,64 +186,55 @@
             const groupTableDiv = document.getElementById('groupTable');
             groupTableDiv.innerHTML = '';
 
-            groups.forEach((group, index) => {
+            groups.forEach((group, groupIndex) => {
                 const groupDiv = document.createElement('div');
                 groupDiv.classList.add('group');
-                groupDiv.innerHTML = `<h3>Group ${index + 1}</h3>`;
+                groupDiv.innerHTML = `<h2>Group ${groupIndex + 1}</h2><table><thead><tr><th>Team</th><th>Played</th><th>Wins</th><th>Losses</th><th>Draws</th><th>Points</th></tr></thead><tbody>`;
                 
-                const table = document.createElement('table');
-                table.innerHTML = `
-                    <tr>
-                        <th>Team</th><th>Played</th><th>Wins</th><th>Losses</th><th>Draws</th>
-                        <th>Goals For</th><th>Goals Against</th><th>Goal Diff</th><th>Points</th>
-                    </tr>
-                `;
-                group.forEach(teamName => {
-                    const team = teamStats.find(t => t.name === teamName);
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td><input type="text" value="${team.name}" onchange="updateTeamName('${team.name}', this.value)"/></td>
-                        <td>${team.played}</td><td>${team.wins}</td><td>${team.losses}</td><td>${team.draws}</td>
-                        <td>${team.goalsFor}</td><td>${team.goalsAgainst}</td><td>${team.goalsFor - team.goalsAgainst}</td>
-                        <td>${team.points}</td>
-                    `;
-                    table.appendChild(row);
+                group.forEach((team, teamIndex) => {
+                    groupDiv.innerHTML += `
+                        <tr>
+                            <td><input type="text" value="${team}" onchange="updateTeamName(${groupIndex}, ${teamIndex}, this.value)" /></td>
+                            <td>${teamStats.find(t => t.name === team).played}</td>
+                            <td>${teamStats.find(t => t.name === team).wins}</td>
+                            <td>${teamStats.find(t => t.name === team).losses}</td>
+                            <td>${teamStats.find(t => t.name === team).draws}</td>
+                            <td>${teamStats.find(t => t.name === team).points}</td>
+                        </tr>`;
                 });
-                groupDiv.appendChild(table);
+
+                groupDiv.innerHTML += '</tbody></table>';
                 groupTableDiv.appendChild(groupDiv);
             });
         }
 
-        function updateTeamName(oldName, newName) {
-            const team = teamStats.find(t => t.name === oldName);
-            team.name = newName;
-            generateMatches(document.getElementById('numMatches').value);
-            generateGroupTable();
-            saveData();
+        function updateTeamName(groupIndex, teamIndex, name) {
+            groups[groupIndex][teamIndex] = name;
         }
 
         function generateMatches(numMatches) {
             matches = [];
             groups.forEach(group => {
-                for (let i = 0; i < group.length; i++) {
+                const groupMatches = [];
+                group.forEach((teamA, i) => {
                     for (let j = i + 1; j < group.length; j++) {
-                        matches.push({
-                            teamA: group[i],
-                            teamB: group[j],
-                            finished: false,
-                            goalsA: 0,
-                            goalsB: 0
+                        const teamB = group[j];
+                        groupMatches.push({
+                            teamA, teamB, goalsA: 0, goalsB: 0, finished: false
                         });
                     }
-                }
+                });
+
+                groupMatches.forEach(match => matches.push(match));
             });
+
             displayMatches();
         }
 
         function displayMatches() {
             const matchesListDiv = document.getElementById('matchesList');
             matchesListDiv.innerHTML = '';
-            
+
             matches.forEach((match, index) => {
                 const matchDiv = document.createElement('div');
                 matchDiv.classList.add('match');
@@ -306,31 +297,35 @@
             matches = [];
             teamStats = [];
             localStorage.removeItem('tournamentData');
+            saveData();
             generateGroupTable();
             displayMatches();
         }
 
         function saveData() {
-            const tournamentData = {
-                groups,
-                matches,
-                teamStats
-            };
-            localStorage.setItem('tournamentData', JSON.stringify(tournamentData));
+            const tournamentData = { groups, matches, teamStats };
+            fetch('/save-tournament', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tournamentData)
+            });
         }
 
         function loadData() {
-            const tournamentData = JSON.parse(localStorage.getItem('tournamentData'));
-            if (tournamentData) {
-                groups = tournamentData.groups;
-                matches = tournamentData.matches;
-                teamStats = tournamentData.teamStats;
-                generateGroupTable();
-                displayMatches();
-            }
+            fetch('/load-tournament')
+                .then(response => response.json())
+                .then(tournamentData => {
+                    if (tournamentData) {
+                        groups = tournamentData.groups;
+                        matches = tournamentData.matches;
+                        teamStats = tournamentData.teamStats;
+                        generateGroupTable();
+                        displayMatches();
+                    }
+                });
         }
 
-        loadData();
+        window.onload = loadData;
     </script>
 </body>
 </html>
