@@ -229,3 +229,68 @@
                             finished: false,
                             goalsA: 0,
                             goalsB: 0
+                        });
+                    }
+                }
+            });
+            displayMatches();
+        }
+
+        function displayMatches() {
+            const matchesListDiv = document.getElementById('matchesList');
+            matchesListDiv.innerHTML = '';
+            
+            matches.forEach((match, index) => {
+                const matchDiv = document.createElement('div');
+                matchDiv.classList.add('match');
+                matchDiv.innerHTML = `
+                    ${match.teamA} vs ${match.teamB} 
+                    <input type="number" min="0" value="${match.goalsA}" onchange="updateMatchResult(${index}, 'A', this.value)"/> - 
+                    <input type="number" min="0" value="${match.goalsB}" onchange="updateMatchResult(${index}, 'B', this.value)"/>
+                    <button onclick="finalizeMatch(${index})">Finalize</button>
+                `;
+                matchesListDiv.appendChild(matchDiv);
+            });
+        }
+
+        function updateMatchResult(index, team, value) {
+            if (team === 'A') matches[index].goalsA = parseInt(value) || 0;
+            else matches[index].goalsB = parseInt(value) || 0;
+        }
+
+        function finalizeMatch(index) {
+            const match = matches[index];
+            if (match.finished) return;
+            
+            match.finished = true;
+            const teamA = teamStats.find(t => t.name === match.teamA);
+            const teamB = teamStats.find(t => t.name === match.teamB);
+
+            teamA.played += 1;
+            teamB.played += 1;
+            teamA.goalsFor += match.goalsA;
+            teamA.goalsAgainst += match.goalsB;
+            teamB.goalsFor += match.goalsB;
+            teamB.goalsAgainst += match.goalsA;
+
+            if (match.goalsA > match.goalsB) {
+                teamA.wins += 1;
+                teamB.losses += 1;
+                teamA.points += 3;
+            } else if (match.goalsA < match.goalsB) {
+                teamB.wins += 1;
+                teamA.losses += 1;
+                teamB.points += 3;
+            } else {
+                teamA.draws += 1;
+                teamB.draws += 1;
+                teamA.points += 1;
+                teamB.points += 1;
+            }
+
+            generateGroupTable();
+            displayMatches();
+        }
+    </script>
+</body>
+</html>
