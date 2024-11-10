@@ -1,0 +1,143 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Tournament Creator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #121212;
+            color: #FFFFFF;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background-color: #282828;
+            color: #FFFFFF;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border: 1px solid #1DB954;
+        }
+        .btn {
+            background-color: #1DB954;
+            color: #FFFFFF;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #1ed760;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .group {
+            margin-bottom: 20px;
+        }
+        .group h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        .match {
+            background-color: #282828;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold mb-6">Football Tournament Creator</h1>
+        <div class="form-group">
+            <label for="numTeams">Number of Teams:</label>
+            <input type="number" id="numTeams" min="2" required>
+        </div>
+        <div class="form-group">
+            <label for="numGroups">Number of Groups:</label>
+            <input type="number" id="numGroups" min="1" required>
+        </div>
+        <div class="form-group">
+            <label for="numMatches">Number of Matches per Team in Group:</label>
+            <input type="number" id="numMatches" min="1" required>
+        </div>
+        <button class="btn" onclick="createTournament()">Create Tournament</button>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function createTournament() {
+            const numTeams = parseInt(document.getElementById('numTeams').value);
+            const numGroups = parseInt(document.getElementById('numGroups').value);
+            const numMatches = parseInt(document.getElementById('numMatches').value);
+
+            if (isNaN(numTeams) || isNaN(numGroups) || isNaN(numMatches) || numTeams < 2 || numGroups < 1 || numMatches < 1) {
+                alert('Please enter valid numbers.');
+                return;
+            }
+
+            const teams = Array.from({ length: numTeams }, (_, i) => `Team ${i + 1}`);
+            const shuffledTeams = shuffle(teams);
+            const groups = Array.from({ length: numGroups }, () => []);
+
+            shuffledTeams.forEach((team, index) => {
+                groups[index % numGroups].push(team);
+            });
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            groups.forEach((group, groupIndex) => {
+                const groupDiv = document.createElement('div');
+                groupDiv.classList.add('group');
+                groupDiv.innerHTML = `<h2>Group ${groupIndex + 1}</h2>`;
+
+                const matches = [];
+                for (let i = 0; i < group.length; i++) {
+                    for (let j = i + 1; j < group.length; j++) {
+                        for (let k = 0; k < numMatches; k++) {
+                            matches.push(`${group[i]} vs ${group[j]}`);
+                        }
+                    }
+                }
+
+                shuffle(matches).forEach(match => {
+                    const matchDiv = document.createElement('div');
+                    matchDiv.classList.add('match');
+                    matchDiv.textContent = match;
+                    groupDiv.appendChild(matchDiv);
+                });
+
+                resultsDiv.appendChild(groupDiv);
+            });
+        }
+    </script>
+</body>
+</html>
